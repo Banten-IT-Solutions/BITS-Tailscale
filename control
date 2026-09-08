@@ -1,6 +1,6 @@
 Package: luci-app-tailscale
 Version: 1.0.0
-Depends: libc, tailscale
+Depends: libc, luci-base, rpcd, tailscale
 Section: luci
 Architecture: all
 Maintainer: Banten IT Solutions <support@bits.co.id>
