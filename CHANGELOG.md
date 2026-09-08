@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.2...v1.0.3) (2026-09-08)
+
+
+### Bug Fixes
+
+* ship conffiles file so opkg preserves /etc/config/tailscale ([23c85a8](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/23c85a8931d4ae7c7977fca9ca2f4a03d49b7e99))
+
 ## [1.0.2](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.1...v1.0.2) (2026-09-08)
 
 
