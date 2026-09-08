@@ -1,0 +1,39 @@
+/* Tailscale LuCI — portable styling */
+
+.ts-status {
+  display: inline-flex !important;
+  align-items: center;
+  vertical-align: middle !important;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border: 1px solid;
+}
+.ts-status-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.ts-status-value { font-weight: 800; letter-spacing: 0.06em; line-height: 1; }
+.ts-status.ts-run { color: #157347; background: rgba(30,164,75,0.12); border-color: rgba(30,164,75,0.40); }
+.ts-status.ts-run .ts-status-dot { background: #1a9d52; animation: ts-pulse 1.8s ease-out infinite; }
+.ts-status.ts-stop { color: #b3261e; background: rgba(200,52,43,0.10); border-color: rgba(200,52,43,0.35); }
+.ts-status.ts-stop .ts-status-dot { background: #d33; }
+@keyframes ts-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(26,157,82,0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(26,157,82,0); }
+  100% { box-shadow: 0 0 0 0 rgba(26,157,82,0); }
+}
+/* Log: samakan margin tombol Scroll to head dengan Scroll to tail */
+#content_syslog > div:last-child { margin-top: 20px !important; padding-bottom: 0 !important; }
+
+/* Dark mode: dukung atribut tema lain + data-theme */
+html[data-darkmode="true"] .ts-status.ts-run,
+html[data-theme="dark"] .ts-status.ts-run { color: #4ade80; background: rgba(74,222,128,0.14); border-color: rgba(74,222,128,0.40); }
+html[data-darkmode="true"] .ts-status.ts-run .ts-status-dot,
+html[data-theme="dark"] .ts-status.ts-run .ts-status-dot { background: #4ade80; }
+html[data-darkmode="true"] .ts-status.ts-stop,
+html[data-theme="dark"] .ts-status.ts-stop { color: #f87171; background: rgba(248,113,113,0.14); border-color: rgba(248,113,113,0.40); }
+html[data-darkmode="true"] .ts-status.ts-stop .ts-status-dot,
+html[data-theme="dark"] .ts-status.ts-stop .ts-status-dot { background: #f87171; }
+
+.ifacebox { display: flex; width: 100%; }
+

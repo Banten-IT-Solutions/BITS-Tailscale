@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT
+#
+# Tailscale LuCI app
+# Dibangun lewat OpenWrt build system (feeds/luci). Letakkan folder ini di
+# feeds/luci/applications/luci-app-tailscale lalu pilih di menuconfig
+# (LuCI -> Applications -> luci-app-tailscale).
+
+include $(TOPDIR)/rules.mk
+
+LUCI_TITLE:=Tailscale
+LUCI_DEPENDS:=+tailscale
+LUCI_PKGARCH:=all
+
+PKG_LICENSE:=MIT
+PKG_MAINTAINER:=BITS Networks <support@bits.co.id>
+
+include ../../luci.mk
+
+# call BuildPackage - OpenWrt buildroot signature file
