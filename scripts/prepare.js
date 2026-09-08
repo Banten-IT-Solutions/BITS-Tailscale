@@ -20,7 +20,12 @@ let control = fs.readFileSync('control', 'utf8');
 control = control.replace(/^Version: .*$/m, `Version: ${version}`);
 fs.writeFileSync('control', control);
 
-// 3) build ipk (build.sh membaca Version dari control)
+// 3) bump Makefile (OpenWrt build system PKG_VERSION)
+let makefile = fs.readFileSync('luci-app-tailscale/Makefile', 'utf8');
+makefile = makefile.replace(/^PKG_VERSION:=.*$/m, `PKG_VERSION:=${version}`);
+fs.writeFileSync('luci-app-tailscale/Makefile', makefile);
+
+// 4) build ipk (build.sh membaca Version dari control)
 execSync('bash build.sh', { stdio: 'inherit' });
 
 console.log(`prepared version ${version}`);
