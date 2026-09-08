@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.3...v1.0.4) (2026-09-08)
+
+
+### Bug Fixes
+
+* ship patched helper + bits-full so install is drop-in (no reapply) ([b9e21bd](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/b9e21bd488c6dca013b053dd08d31e6ade63e66d))
+
 ## [1.0.3](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.2...v1.0.3) (2026-09-08)
 
 
