@@ -14,11 +14,14 @@ mkdir -p .build/root .build/control .build/outer dist
 cp -a luci-app-tailscale/htdocs/. .build/root/www/
 cp -a luci-app-tailscale/root/.   .build/root/
 
-# control + optional postinst
+# control + optional postinst + conffiles
 cp control .build/control/control
 if [ -f postinst ]; then
   cp postinst .build/control/postinst
   chmod 755 .build/control/postinst
+fi
+if [ -f conffiles ]; then
+  cp conffiles .build/control/conffiles
 fi
 
 tar czf .build/data.tar.gz --owner=0 --group=0 -C .build/root .

@@ -5,6 +5,4 @@ Section: luci
 Architecture: all
 Maintainer: Banten IT Solutions <support@bits.co.id>
 License: MIT
-Conffiles:
- /etc/config/tailscale
 Description: LuCI support for Tailscale
