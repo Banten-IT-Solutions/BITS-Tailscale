@@ -3,6 +3,6 @@ Version: 1.0.0
 Depends: libc, tailscale
 Section: luci
 Architecture: all
-Maintainer: BITS Networks <support@bits.co.id>
+Maintainer: Banten IT Solutions <support@bits.co.id>
 License: MIT
 Description: LuCI support for Tailscale

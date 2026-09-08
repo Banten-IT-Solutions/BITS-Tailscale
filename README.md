@@ -1,8 +1,8 @@
 <div align="center">
-  <h1>BITS Tailscale LuCI</h1>
+  <h1>BITS Tailscale</h1>
   <p>
     <a href="https://bits.co.id">
-      <img src="https://img.shields.io/badge/Banten%20IT%20Solutions-Tailscale%20LuCI-00C853?style=for-the-badge&logo=tailscale&logoColor=white" alt="BITS Tailscale LuCI" />
+      <img src="https://img.shields.io/badge/Banten%20IT%20Solutions-BITS%20Tailscale-00C853?style=for-the-badge&logo=tailscale&logoColor=white" alt="BITS Tailscale" />
     </a>
   </p>
   <p>
@@ -50,7 +50,7 @@
 ## 📁 Project Structure
 
 ```text
-bits-tailscale/
+BITS-Tailscale/
 ├── .github/
 │   └── workflows/
 │       └── release.yml            # semantic-release + build .ipk + attach asset
@@ -89,7 +89,7 @@ bits-tailscale/
 
 ### 1. Download
 
-Grab the `.ipk` from the [Releases](https://github.com/bitscoid/bits-tailscale/releases) page, then copy it to your device.
+Grab the `.ipk` from the [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases) page, then copy it to your device.
 
 ### 2. Install
 
@@ -158,5 +158,5 @@ Distributed under the MIT License. See `LICENSE`.
 ---
 
 <div align="center">
-  <strong>BITS Tailscale LuCI</strong> Developed with ❤️ by <a href="https://bits.co.id"><strong>Banten IT Solutions</strong></a>
+  <strong>BITS Tailscale</strong> Developed with ❤️ by <a href="https://bits.co.id"><strong>Banten IT Solutions</strong></a>
 </div>

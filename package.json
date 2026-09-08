@@ -5,7 +5,7 @@
   "description": "LuCI app for Tailscale",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitscoid/bits-tailscale.git"
+    "url": "https://github.com/Banten-IT-Solutions/BITS-Tailscale.git"
   },
   "license": "MIT",
   "devDependencies": {

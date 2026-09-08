@@ -12,7 +12,7 @@ LUCI_DEPENDS:=+tailscale
 LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
-PKG_MAINTAINER:=BITS Networks <support@bits.co.id>
+PKG_MAINTAINER:=Banten IT Solutions <support@bits.co.id>
 
 include ../../luci.mk
 
