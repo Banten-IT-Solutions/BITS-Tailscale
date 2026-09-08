@@ -1,46 +1,132 @@
-# luci-app-tailscale
+<div align="center">
+  <h1>BITS Tailscale LuCI</h1>
+  <p>
+    <a href="https://bits.co.id">
+      <img src="https://img.shields.io/badge/Banten%20IT%20Solutions-Tailscale%20LuCI-00C853?style=for-the-badge&logo=tailscale&logoColor=white" alt="BITS Tailscale LuCI" />
+    </a>
+  </p>
+  <p>
+    Drop-in LuCI app for Tailscale on OpenWrt &mdash; manage your mesh VPN from the web interface with a modern BITS theme.
+  </p>
+  <br>
+  <p>
+    <img src="https://img.shields.io/badge/OpenWrt-00A1E9?style=flat&logo=openwrt&logoColor=white" alt="OpenWrt" />
+    <img src="https://img.shields.io/badge/LuCI-3D5780?style=flat" alt="LuCI" />
+    <img src="https://img.shields.io/badge/Tailscale-242424?style=flat&logo=tailscale&logoColor=white" alt="Tailscale" />
+    <img src="https://img.shields.io/badge/WireGuard-88171A?style=flat&logo=wireguard&logoColor=white" alt="WireGuard" />
+    <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black" alt="JavaScript" />
+    <img src="https://img.shields.io/badge/license-MIT-green?style=flat" alt="MIT License" />
+  </p>
+</div>
 
-LuCI app untuk [Tailscale](https://tailscale.com) — antarmuka pengelolaan Tailscale di OpenWrt yang ringkas dan modern. Drop-in pengganti `luci-app-tailscale` bawaan.
+---
 
-## Fitur
+## ✨ Features
 
-- **Global Settings** dengan status `Connected` / `Disconnected` bergaya pill + indikator titik berkedip.
-- **Interface Info** menampilkan tabel `Network Interface Information` bergaya kartu (`ifacebox`), konsisten dengan halaman *Routes* bawaan LuCI.
-- **Logs** dengan tombol *Scroll to tail / head* yang rapi (margin simetris).
-- Title halaman konsisten di atas tab.
-- Perbaikan ACL: path `logread` mendukung OpenWrt 22.03 (`/sbin/logread`) **dan** 24.10 (`/usr/libexec/logread-ubox`) — mencegah `PermissionError: Access to command denied by ACL`.
-- **Auto-install binary Tailscale**: paket ini `Depends: tailscale`, jadi `opkg` otomatis menarik binary resmi Tailscale saat instalasi.
-- **Official latest**: `postinst` berusaha menaikkan binary ke rilisan resmi terbaru via `tailscale update` (best-effort, non-fatal).
+| Feature                   | Description                                                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Global Settings**       | `Connected` / `Disconnected` status pill with blinking dot, themed via `bits.css`.                              |
+| **Interface Info**        | `Network Interface Information` rendered as a card (`ifacebox`), consistent with the native *Routes* page.      |
+| **Logs Viewer**           | Tailscale daemon logs with *Scroll to tail / head* buttons and symmetric margins.                               |
+| **Page Title Fix**        | Each page title is rendered via `form.Map(config, title)` so it no longer disappears.                          |
+| **ACL Logread Fix**       | ACL allows `logread` on both OpenWrt 22.03 (`/sbin/logread`) and 24.10 (`/usr/libexec/logread-ubox`) &mdash; prevents `PermissionError: Access to command denied by ACL`. |
+| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` pulls the official binary automatically.                               |
+| **Official Latest**       | `postinst` best-effort upgrades the binary via `tailscale update` (non-fatal).                                  |
+| **Automated Release**     | semantic-release builds the `.ipk` and publishes a GitHub Release on every conventional commit.                 |
 
-## Install
+## 🛠️ Tech Stack
 
-Dari rilis `.ipk` di laman [Releases](https://github.com/bitscoid/bits-tailscale/releases):
+| Layer        | Technology                                                                        |
+| ------------ | --------------------------------------------------------------------------------- |
+| **Runtime**  | OpenWrt (LuCI)                                                                    |
+| **Backend**  | `rpcd` ACL, `uci-defaults`, `hotplug.d`                                           |
+| **Language** | JavaScript (LuCI AMD views loaded via `require`)                                  |
+| **Theme**    | BITS theme (`bits.css`, `bits-icons.js`)                                          |
+| **Build**    | `bash` + `tar` (no SDK), OpenWrt build system (`luci.mk`)                         |
+| **Release**  | semantic-release + GitHub Actions                                                 |
 
-```sh
-# pastikan feed resmi OpenWrt aktif, lalu:
-opkg install luci-app-tailscale_1.0.0_all.ipk
+---
+
+## 📁 Project Structure
+
+```text
+bits-tailscale/
+├── .github/
+│   └── workflows/
+│       └── release.yml            # semantic-release + build .ipk + attach asset
+├── luci-app-tailscale/
+│   ├── Makefile                   # OpenWrt package def (luci.mk)
+│   ├── htdocs/
+│   │   └── luci-static/resources/view/tailscale/
+│   │       ├── interface.js       # Global Settings + Interface Info
+│   │       ├── log.js             # Logs viewer
+│   │       ├── setting.js         # Status pill + BITS theme
+│   │       └── style.css          # local view styles
+│   └── root/
+│       ├── etc/hotplug.d/iface/40-tailscale
+│       ├── etc/uci-defaults/40_luci-tailscale
+│       └── usr/share/
+│           ├── luci/menu.d/luci-app-tailscale.json
+│           └── rpcd/acl.d/luci-app-tailscale.json
+├── scripts/
+│   └── prepare.js                 # sync version + build (used by semantic-release)
+├── build.sh                       # SDK-less .ipk packer
+├── control                        # ipk metadata
+├── postinst                       # reload ACL/menu + tailscale update (best-effort)
+├── package.json                   # semantic-release + plugins
+├── .releaserc.json                # release plugins (git + github)
+└── LICENSE
 ```
 
-`tailscale` (binary) akan ikut terpasang otomatis. Bila ingin memaksa versi resmi terbaru:
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- An OpenWrt device (22.03+), with the `luci` feed installed
+- Internet access for the `tailscale` binary
+
+### 1. Download
+
+Grab the `.ipk` from the [Releases](https://github.com/bitscoid/bits-tailscale/releases) page, then copy it to your device.
+
+### 2. Install
+
+```sh
+opkg install luci-app-tailscale_<version>_all.ipk
+```
+
+`tailscale` (binary) is installed automatically via the package dependency. To force the latest official binary:
 
 ```sh
 tailscale update
 ```
 
-## Build
+### 3. Use
 
-### Tanpa SDK (langsung jadi `.ipk`)
+Open LuCI (`Services → Tailscale`) and sign in with your Tailscale account.
+
+---
+
+## 🏗️ Build
+
+Choose one method. **SDK-less** for a quick `.ipk`; **OpenWrt build system** for the official feed.
+
+### Option A — SDK-less (bash + tar)
+
+Best for fast development and CI. Requires only `bash` + `tar` &mdash; no toolchain.
 
 ```sh
 ./build.sh
-# output: dist/luci-app-tailscale_<versi>_all.ipk
+# output: dist/luci-app-tailscale_<version>_all.ipk
 ```
 
-Cukup `bash` + `tar` — tidak butuh toolchain. (Format `.ipk` OpenWrt adalah `tar.gz` luar berisi `./debian-binary` + `./control.tar.gz` + `./data.tar.gz`.)
+> The OpenWrt `.ipk` format is an outer `tar.gz` containing `./debian-binary` + `./control.tar.gz` + `./data.tar.gz`.
 
-### Dengan OpenWrt build system
+### Option B — OpenWrt Build System
 
-Salin folder paket ke `feeds/luci/applications/`, lalu:
+Copy the package folder to `feeds/luci/applications/`, then:
 
 ```sh
 ./scripts/feeds update -a
@@ -49,32 +135,28 @@ make menuconfig   # LuCI -> Applications -> luci-app-tailscale
 make package/luci-app-tailscale/compile
 ```
 
-## Release otomatis (semantic-release)
+---
 
-Rilis memakai [semantic-release](https://semantic-release.gitbook.io) dengan [Conventional Commits](https://www.conventionalcommits.org). Cukup tulis pesan commit konvensional:
+## 🚀 Release
 
-- `fix: ...` → bump patch (1.0.x)
-- `feat: ...` → bump minor (1.x.0)
-- `BREAKING CHANGE:` di body → bump major (x.0.0)
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io) and [Conventional Commits](https://www.conventionalcommits.org). Write a conventional commit:
 
-Push ke `main` akan membangun `.ipk` dan membuat GitHub Release dengan asetnya.
+| Commit                           | Bump       |
+| -------------------------------- | ---------- |
+| `fix: ...`                       | patch      |
+| `feat: ...`                      | minor      |
+| `BREAKING CHANGE:` in body       | major      |
 
-## Struktur proyek
+Push to `main` and the workflow builds the `.ipk` and publishes a GitHub Release with the asset attached.
 
-```
-.
-├── .github/workflows/release.yml   # semantic-release + build .ipk
-├── luci-app-tailscale/
-│   ├── Makefile                    # definisi paket OpenWrt (luci.mk)
-│   ├── htdocs/…/view/tailscale/    # interface.js, log.js, setting.js, style.css
-│   └── root/                       # ACL, menu, hotplug, uci-defaults
-├── control                         # metadata ipk
-├── postinst                        # reload ACL/menu + tailscale update (best-effort)
-├── scripts/prepare.js              # sinkronisasi versi + build (dipakai semantic-release)
-├── build.sh                        # packer .ipk tanpa SDK
-└── LICENSE
-```
+---
 
-## Lisensi
+## 📄 License
 
-[MIT](LICENSE). Dibangun di atas `luci-app-tailscale` (asvow) dan komponen LuCI.
+Distributed under the MIT License. See `LICENSE`.
+
+---
+
+<div align="center">
+  <strong>BITS Tailscale LuCI</strong> Developed with ❤️ by <a href="https://bits.co.id"><strong>Banten IT Solutions</strong></a>
+</div>
