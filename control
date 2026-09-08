@@ -1,5 +1,5 @@
 Package: luci-app-tailscale
-Version: 1.0.0
+Version: 1.0.1
 Depends: libc, luci-base, rpcd, tailscale
 Section: luci
 Architecture: all
