@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.5...v1.0.6) (2026-09-09)
+
+
+### Bug Fixes
+
+* reorder LuCI menu (tailscale below bot in Services) ([7a0db9d](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/7a0db9d61ac872b09bd8cbf110d4e9a1d145b82b))
+
 ## [1.0.5](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.4...v1.0.5) (2026-09-09)
 
 
