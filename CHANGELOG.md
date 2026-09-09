@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.4...v1.0.5) (2026-09-09)
+
+
+### Bug Fixes
+
+* load style.css via inline <link> (menu.d 'css' field dropped by LuCI 24.10 dispatcher) ([b7c586e](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/b7c586eecf4c063aae9537c1bcfb5fd6724fc782))
+
 ## [1.0.4](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.3...v1.0.4) (2026-09-08)
 
 
