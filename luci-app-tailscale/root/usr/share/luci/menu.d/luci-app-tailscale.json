@@ -13,7 +13,6 @@
 	"admin/services/tailscale/setting": {
 		"title": "Global Settings",
 		"order": 10,
-		"css": "view/tailscale/style.css",
 		"action": {
 			"type": "view",
 			"path": "tailscale/setting"
@@ -22,7 +21,6 @@
 	"admin/services/tailscale/interface": {
 		"title": "Interface Info",
 		"order": 20,
-		"css": "view/tailscale/style.css",
 		"action": {
 			"type": "view",
 			"path": "tailscale/interface"
@@ -31,7 +29,6 @@
 	"admin/services/tailscale/log": {
 		"title": "Logs",
 		"order": 30,
-		"css": "view/tailscale/style.css",
 		"action": {
 			"type": "view",
 			"path": "tailscale/log"
