@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.6...v1.0.7) (2026-09-10)
+
+
+### Bug Fixes
+
+* bump ci trigger test ([94b9de3](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/94b9de3d794dd1f0010c8bedd661752f2944e3d4))
+
 ## [1.0.6](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.5...v1.0.6) (2026-09-09)
 
 
