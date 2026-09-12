@@ -1,3 +1,10 @@
+## [1.0.9](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.8...v1.0.9) (2026-09-12)
+
+
+### Bug Fixes
+
+* narrow apk attach glob ([ee3d911](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/ee3d911453539d4f7c8a20dfe5f6d2150ec969c7))
+
 ## [1.0.8](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.7...v1.0.8) (2026-09-12)
 
 

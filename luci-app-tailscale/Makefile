@@ -13,7 +13,7 @@ LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=Banten IT Solutions <support@bits.co.id>
-PKG_VERSION:=1.0.8
+PKG_VERSION:=1.0.9
 PKG_RELEASE:=1
 
 include $(TOPDIR)/feeds/luci/luci.mk
