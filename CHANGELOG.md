@@ -1,3 +1,10 @@
+## [1.0.8](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.7...v1.0.8) (2026-09-12)
+
+
+### Bug Fixes
+
+* enable apk package build ([7044a4e](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/7044a4e71fa1d457ff0a6129cc014c2e4a08e4bb))
+
 ## [1.0.7](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.6...v1.0.7) (2026-09-10)
 
 
