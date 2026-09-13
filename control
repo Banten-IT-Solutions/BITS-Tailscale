@@ -1,5 +1,5 @@
 Package: luci-app-bitstailscale
-Version: 1.1.1
+Version: 1.2.0
 Depends: libc, luci-base, rpcd, tailscale
 Section: luci
 Architecture: all

@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.1.1...v1.2.0) (2026-09-13)
+
+
+### Bug Fixes
+
+* clone apk-tools dari GitHub mirror (gitlab 418) ([7d4926d](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/7d4926d30560e53cb7b175e606d3600e894811e7))
+
+
+### Features
+
+* build .apk tanpa SDK via apk-tools v3 ([216495c](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/216495ced5c8c22b04a5aaa4daa1a5febe95a8a1))
+
 ## [1.1.1](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.1.0...v1.1.1) (2026-09-13)
 
 
