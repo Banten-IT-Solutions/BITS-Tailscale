@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=Tailscale
-LUCI_DEPENDS:=+tailscale
+LUCI_DEPENDS:=tailscale
 LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
