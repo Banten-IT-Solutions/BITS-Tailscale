@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.1.0...v1.1.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* tailscale as runtime dep (remove + to avoid Go source build) ([9be5ae4](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/9be5ae47707af1af309c27acea71bef60564c143))
+
 # [1.1.0](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.9...v1.1.0) (2026-09-13)
 
 
