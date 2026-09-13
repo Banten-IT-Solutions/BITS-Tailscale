@@ -1,0 +1,8 @@
+Package: luci-app-bitstailscale
+Version: 1.1.1
+Depends: libc, luci-base, rpcd, tailscale
+Section: luci
+Architecture: all
+Maintainer: Banten IT Solutions <support@bits.co.id>
+License: MIT
+Description: LuCI support for Tailscale

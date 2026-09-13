@@ -1,0 +1,17 @@
+#!/bin/sh
+# postinst luci-app-bitstailscale
+# Reload LuCI ACL/menu dan auto-update tailscale ke versi resmi terbaru (best-effort).
+
+[ -z "$IPKG_INSTROOT" ] && {
+	/etc/init.d/rpcd restart >/dev/null 2>&1
+	rm -rf /tmp/luci-indexcache /tmp/luci-* /tmp/.uci
+
+	# Tailscale "official latest": paket ini Depends ke `tailscale` (binary dari feed
+	# atau yang sudah terpasang). Usahakan naik ke rilisan resmi terbaru secara
+	# latar-belakang; non-fatal dan tidak menghalangi proses instalasi.
+	if [ -x /usr/sbin/tailscale ]; then
+		( tailscale update >/dev/null 2>&1 & )
+	fi
+}
+
+exit 0

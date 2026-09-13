@@ -58,42 +58,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build:
-    name: 🏗️ Build Packages (${{ matrix.branch }})
-    needs: release
-    if: needs.release.outputs.released == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [ openwrt-24.10, openwrt-25.12 ]
-    steps:
-      - name: 🧾 Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ needs.release.outputs.tag }}
-
-      - name: 🏗️ Build Package
-        uses: openwrt/gh-action-sdk@f5813d30eeef3534b58ac7e79c5d8842b6035434 # main
-        env:
-          ARCH: aarch64_generic-${{ matrix.branch }}
-          FEEDNAME: bits
-          PACKAGES: luci-app-bitstailscale
-          NO_REFRESH_CHECK: true
-          KEY_BUILD: ${{ matrix.branch == 'openwrt-24.10' && secrets.KEY_BUILD || '' }}
-          PRIVATE_KEY: ${{ matrix.branch == 'openwrt-25.12' && secrets.APK_PRIVATE_KEY || '' }}
-
-      - name: 📤 Attach Packages
-        run: |
-          find bin/packages -path '*/bits/*' \( -name '*.ipk' -o -name '*.apk' \) \
-            -exec gh release upload "${{ needs.release.outputs.tag }}" {} --clobber \;
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   feed:
     name: 🔔 Trigger Feed
-    needs: [release, build]
+    needs: release
     if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
