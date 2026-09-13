@@ -48,6 +48,7 @@ if command -v "$APK_BIN" >/dev/null 2>&1; then
     --info "license:MIT"
     --info "maintainer:Banten IT Solutions <support@bits.co.id>"
     --info "depends:${PKG_DEPENDS}"
+    --info "replaces:tailscale"
   )
   if [ -f postinst ]; then
     APK_ARGS+=(--script "post-install:postinst")
