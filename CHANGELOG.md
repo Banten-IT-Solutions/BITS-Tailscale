@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.0...v1.2.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* trailing newline di conffiles (hilangkan opkg parse warning) ([8e41a08](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/8e41a0817d1fb0367d9f87da4174085714a4262d))
+
 # [1.2.0](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.1.1...v1.2.0) (2026-09-13)
 
 
