@@ -25,14 +25,14 @@
 
 | Feature                   | Description                                                                                                     |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Global Settings**       | `Connected` / `Disconnected` status pill with blinking dot, themed via `bits.css`.                              |
+| **Global Settings**       | `Connected` / `Disconnected` status pill with blinking dot, styled via portable `style.css`.                    |
 | **Interface Info**        | `Network Interface Information` rendered as a card (`ifacebox`), consistent with the native *Routes* page.      |
 | **Logs Viewer**           | Tailscale daemon logs with *Scroll to tail / head* buttons and symmetric margins.                               |
 | **Page Title Fix**        | Each page title is rendered via `form.Map(config, title)` so it no longer disappears.                          |
 | **ACL Logread Fix**       | ACL allows `logread` on both OpenWrt 22.03 (`/sbin/logread`) and 24.10 (`/usr/libexec/logread-ubox`) &mdash; prevents `PermissionError: Access to command denied by ACL`. |
-| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` pulls the official binary automatically.                               |
+| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` / `apk` pulls the official binary automatically.                       |
 | **Official Latest**       | `postinst` best-effort upgrades the binary via `tailscale update` (non-fatal).                                  |
-| **Automated Release**     | semantic-release builds the `.ipk` and publishes a GitHub Release on every conventional commit.                 |
+| **Automated Release**     | semantic-release builds signed `.ipk` + `.apk` via SDK and publishes a GitHub Release on every conventional commit. |
 
 ## 🛠️ Tech Stack
 
@@ -41,7 +41,7 @@
 | **Runtime**  | OpenWrt (LuCI)                                                                    |
 | **Backend**  | `rpcd` ACL, `uci-defaults`, `hotplug.d`                                           |
 | **Language** | JavaScript (LuCI AMD views loaded via `require`)                                  |
-| **Theme**    | BITS theme (`bits.css`, `bits-icons.js`)                                          |
+| **Theme**    | Portable `style.css` (status pill + dark mode)                                    |
 | **Build**    | OpenWrt build system (`luci.mk`) via SDK                                       |
 | **Release**  | semantic-release + GitHub Actions                                                 |
 
@@ -56,19 +56,24 @@ BITS-Tailscale/
 │   └── workflows/
 │       └── release.yml            # semantic-release + build .ipk/.apk + attach asset
 ├── luci-app-bitstailscale/
-│   ├── Makefile                   # OpenWrt package def (luci.mk) + postinst
+│   ├── Makefile                   # OpenWrt package def (luci.mk) + postinst/conffiles
 │   ├── htdocs/
 │   │   └── luci-static/resources/view/bitstailscale/
-│   │       ├── interface.js       # Global Settings + Interface Info
+│   │       ├── interface.js       # Interface Info
 │   │       ├── log.js             # Logs viewer
-│   │       ├── setting.js         # Status pill + BITS theme
-│   │       └── style.css          # local view styles
+│   │       ├── setting.js         # Global Settings form + status pill
+│   │       └── style.css          # portable view styles
 │   └── root/
-│       ├── etc/hotplug.d/iface/40-tailscale
-│       ├── etc/uci-defaults/40_luci-tailscale
-│       └── usr/share/
-│           ├── luci/menu.d/luci-app-bitstailscale.json
-│           └── rpcd/acl.d/luci-app-bitstailscale.json
+│       ├── etc/
+│       │   ├── config/tailscale
+│       │   ├── hotplug.d/iface/40-tailscale
+│       │   ├── init.d/tailscale
+│       │   └── uci-defaults/40_luci-tailscale
+│       └── usr/
+│           ├── sbin/tailscale_helper
+│           └── share/
+│               ├── luci/menu.d/luci-app-bitstailscale.json
+│               └── rpcd/acl.d/luci-app-bitstailscale.json
 ├── scripts/
 │   └── prepare.js                 # sync version (package.json + lockfile + Makefile)
 ├── package.json                   # semantic-release + plugins
