@@ -42,7 +42,7 @@
 | **Backend**  | `rpcd` ACL, `uci-defaults`, `hotplug.d`                                           |
 | **Language** | JavaScript (LuCI AMD views loaded via `require`)                                  |
 | **Theme**    | BITS theme (`bits.css`, `bits-icons.js`)                                          |
-| **Build**    | `bash` + `tar` (no SDK), OpenWrt build system (`luci.mk`)                         |
+| **Build**    | OpenWrt build system (`luci.mk`) via SDK                                       |
 | **Release**  | semantic-release + GitHub Actions                                                 |
 
 ---
@@ -52,12 +52,13 @@
 ```text
 BITS-Tailscale/
 ├── .github/
+│   ├── dependabot.yml             # dep update (npm + actions)
 │   └── workflows/
-│       └── release.yml            # semantic-release + build .ipk + attach asset
-├── luci-app-tailscale/
-│   ├── Makefile                   # OpenWrt package def (luci.mk)
+│       └── release.yml            # semantic-release + build .ipk/.apk + attach asset
+├── luci-app-bitstailscale/
+│   ├── Makefile                   # OpenWrt package def (luci.mk) + postinst
 │   ├── htdocs/
-│   │   └── luci-static/resources/view/tailscale/
+│   │   └── luci-static/resources/view/bitstailscale/
 │   │       ├── interface.js       # Global Settings + Interface Info
 │   │       ├── log.js             # Logs viewer
 │   │       ├── setting.js         # Status pill + BITS theme
@@ -66,14 +67,12 @@ BITS-Tailscale/
 │       ├── etc/hotplug.d/iface/40-tailscale
 │       ├── etc/uci-defaults/40_luci-tailscale
 │       └── usr/share/
-│           ├── luci/menu.d/luci-app-tailscale.json
-│           └── rpcd/acl.d/luci-app-tailscale.json
+│           ├── luci/menu.d/luci-app-bitstailscale.json
+│           └── rpcd/acl.d/luci-app-bitstailscale.json
 ├── scripts/
-│   └── prepare.js                 # sync version + build (used by semantic-release)
-├── build.sh                       # SDK-less .ipk packer
-├── control                        # ipk metadata
-├── postinst                       # reload ACL/menu + tailscale update (best-effort)
+│   └── prepare.js                 # sync version (package.json + lockfile + Makefile)
 ├── package.json                   # semantic-release + plugins
+├── package-lock.json              # npm lockfile (npm ci)
 ├── .releaserc.json                # release plugins (git + github)
 └── LICENSE
 ```
@@ -89,12 +88,18 @@ BITS-Tailscale/
 
 ### 1. Download
 
-Grab the `.ipk` from the [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases) page, then copy it to your device.
+Grab the package from the [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases) page, then copy it to your device:
+- `.ipk` for OpenWrt 22.03–24.10 (`opkg`)
+- `.apk` for OpenWrt 25.12+ (`apk`)
 
 ### 2. Install
 
 ```sh
-opkg install luci-app-tailscale_<version>_all.ipk
+# OpenWrt 22.03–24.10 (opkg)
+opkg install luci-app-bitstailscale_<version>_all.ipk
+
+# OpenWrt 25.12+ (apk)
+apk add luci-app-bitstailscale_<version>_all.apk
 ```
 
 `tailscale` (binary) is installed automatically via the package dependency. To force the latest official binary:
@@ -105,34 +110,19 @@ tailscale update
 
 ### 3. Use
 
-Open LuCI (`Services → Tailscale`) and sign in with your Tailscale account.
+Open LuCI (`Services → BITS Tailscale`) and sign in with your Tailscale account.
 
 ---
 
 ## 🏗️ Build
 
-Choose one method. **SDK-less** for a quick `.ipk`; **OpenWrt build system** for the official feed.
-
-### Option A — SDK-less (bash + tar)
-
-Best for fast development and CI. Requires only `bash` + `tar` &mdash; no toolchain.
-
-```sh
-./build.sh
-# output: dist/luci-app-tailscale_<version>_all.ipk
-```
-
-> The OpenWrt `.ipk` format is an outer `tar.gz` containing `./debian-binary` + `./control.tar.gz` + `./data.tar.gz`.
-
-### Option B — OpenWrt Build System
-
-Copy the package folder to `feeds/luci/applications/`, then:
+Build lewat OpenWrt build system. Copy package folder ke `feeds/luci/applications/`, lalu:
 
 ```sh
 ./scripts/feeds update -a
-./scripts/feeds install luci-app-tailscale
-make menuconfig   # LuCI -> Applications -> luci-app-tailscale
-make package/luci-app-tailscale/compile
+./scripts/feeds install luci-app-bitstailscale
+make menuconfig   # LuCI -> Applications -> luci-app-bitstailscale
+make package/luci-app-bitstailscale/compile
 ```
 
 ---
@@ -147,7 +137,29 @@ Releases are automated with [semantic-release](https://semantic-release.gitbook.
 | `feat: ...`                      | minor      |
 | `BREAKING CHANGE:` in body       | major      |
 
-Push to `main` and the workflow builds the `.ipk` and publishes a GitHub Release with the asset attached.
+Push to `main` dan workflow build `.ipk` (openwrt-24.10) + `.apk` (openwrt-25.12) lalu publish ke GitHub Release.
+
+### 🔏 Signing
+
+Paket di-build **signed** untuk feed distribusi. Butuh dua secret:
+
+| Secret             | Format             | Untuk            |
+| ------------------ | ------------------ | ---------------- |
+| `KEY_BUILD`        | usign secret key   | `.ipk` (24.10)   |
+| `APK_PRIVATE_KEY`  | ed25519 PEM        | `.apk` (25.12)   |
+
+Generate key:
+
+```sh
+# ipk (usign) — pakai `usign` dari OpenWrt (`opkg install usign`) atau SDK: `staging_dir/host/bin/usign`
+usign -G -s key-build -p key-build.pub -c "BITS Tailscale"
+
+# apk (ed25519 PEM) + turunan public key
+openssl genpkey -algorithm ed25519 -out private-key.pem
+openssl pkey -in private-key.pem -pubout -out public-key.pem
+```
+
+Taruh isi `key-build` → secret `KEY_BUILD`, isi `private-key.pem` → secret `APK_PRIVATE_KEY`. Public key (`key-build.pub` / `public-key.pem`) dipasang di device/feed untuk verifikasi. Signing switch per-branch otomatis; secret kosong → branch itu unsigned (tidak gagal).
 
 ---
 

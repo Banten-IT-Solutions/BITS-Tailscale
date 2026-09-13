@@ -1,5 +1,5 @@
 {
-	"luci-app-tailscale": {
+	"luci-app-bitstailscale": {
 		"description": "Grant access to Tailscale configuration",
 		"read": {
 			"file": {
