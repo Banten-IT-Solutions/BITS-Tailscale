@@ -1,3 +1,10 @@
+## [1.2.4](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.3...v1.2.4) (2026-09-13)
+
+
+### Bug Fixes
+
+* add replaces:tailscale to apk (avoid file conflict with tailscale) ([2146770](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/2146770a79d8929bd1fb31bc80770a779a5e8eeb))
+
 ## [1.2.3](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.2...v1.2.3) (2026-09-13)
 
 
