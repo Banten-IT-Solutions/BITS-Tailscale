@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.1...v1.2.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* trailing newline di control + postinst (opkg parse warning) ([7a7f902](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/7a7f9022c82f67c3777ab041e72b4731402d4b14))
+
 ## [1.2.1](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.0...v1.2.1) (2026-09-13)
 
 
