@@ -56,7 +56,6 @@ BITS-Tailscale/
 │   └── workflows/
 │       └── release.yml            # semantic-release + build .ipk/.apk + attach asset
 ├── luci-app-bitstailscale/
-│   ├── Makefile                   # OpenWrt package def (luci.mk) — buat build manual
 │   ├── htdocs/
 │   │   └── luci-static/resources/view/bitstailscale/
 │   │       ├── interface.js       # Interface Info
@@ -75,7 +74,7 @@ BITS-Tailscale/
 │               ├── luci/menu.d/luci-app-bitstailscale.json
 │               └── rpcd/acl.d/luci-app-bitstailscale.json
 ├── scripts/
-│   └── prepare.js                 # sync version + build .ipk (semantic-release)
+│   └── prepare.js                 # sync version + build .ipk/.apk (semantic-release)
 ├── build.sh                       # SDK-less .ipk + .apk packer (bash + tar + apk-tools)
 ├── control                        # ipk metadata
 ├── postinst                       # reload ACL/menu + tailscale update
@@ -125,9 +124,7 @@ Open LuCI (`Services → BITS Tailscale`) and sign in with your Tailscale accoun
 
 ## 🏗️ Build
 
-### Option A — SDK-less `.ipk` + `.apk` (cepat)
-
-Butuh `apk-tools v3` (`apk mkpkg`) di `PATH`. Di CI sudah di-cache; lokal install `apk-tools` 3.x atau set `APK_BIN=<path/to/apk>`.
+SDK-less `.ipk` + `.apk`. Butuh `apk-tools v3` (`apk mkpkg`) di `PATH`. Di CI sudah di-cache; lokal install `apk-tools` 3.x atau set `APK_BIN=<path/to/apk>`.
 
 ```sh
 ./build.sh
@@ -136,17 +133,6 @@ Butuh `apk-tools v3` (`apk mkpkg`) di `PATH`. Di CI sudah di-cache; lokal instal
 ```
 
 > `.ipk` = outer `tar.gz` (debian-binary + control.tar.gz + data.tar.gz). `.apk` = ADB container via `apk mkpkg`.
-
-### Option B — OpenWrt build system (buildroot lengkap)
-
-Copy package folder ke `feeds/luci/applications/`, lalu:
-
-```sh
-./scripts/feeds update -a
-./scripts/feeds install luci-app-bitstailscale
-make menuconfig   # LuCI -> Applications -> luci-app-bitstailscale
-make package/luci-app-bitstailscale/compile
-```
 
 ---
 
