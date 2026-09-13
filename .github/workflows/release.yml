@@ -46,9 +46,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq meson ninja-build libzstd-dev libssl-dev liblua5.3-dev
-          git clone --depth 1 https://gitlab.alpinelinux.org/alpine/apk-tools.git /tmp/apk-tools
-          git -C /tmp/apk-tools fetch --depth 1 origin b5a31c0d865342ad80be10d68f1bb3d3ad9b0866
-          git -C /tmp/apk-tools checkout FETCH_HEAD
+          git clone --depth 1 --branch v3.0.5 https://github.com/alpinelinux/apk-tools.git /tmp/apk-tools
           meson setup /tmp/apk-tools/build /tmp/apk-tools -Ddocs=disabled
           ninja -C /tmp/apk-tools/build
           mkdir -p apk-bin
