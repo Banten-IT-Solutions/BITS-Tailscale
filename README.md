@@ -30,9 +30,9 @@
 | **Logs Viewer**           | Tailscale daemon logs with *Scroll to tail / head* buttons and symmetric margins.                               |
 | **Page Title Fix**        | Each page title is rendered via `form.Map(config, title)` so it no longer disappears.                          |
 | **ACL Logread Fix**       | ACL allows `logread` on both OpenWrt 22.03 (`/sbin/logread`) and 24.10 (`/usr/libexec/logread-ubox`) &mdash; prevents `PermissionError: Access to command denied by ACL`. |
-| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` pulls the official binary automatically.                               |
+| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` / `apk` pulls the official binary automatically.                       |
 | **Official Latest**       | `postinst` best-effort upgrades the binary via `tailscale update` (non-fatal).                                  |
-| **Automated Release**     | semantic-release builds the `.ipk` and publishes a GitHub Release on every conventional commit.                 |
+| **Automated Release**     | semantic-release builds `.ipk` + `.apk` and publishes a GitHub Release on every conventional commit.            |
 
 ## 🛠️ Tech Stack
 
@@ -42,7 +42,7 @@
 | **Backend**  | `rpcd` ACL, `uci-defaults`, `hotplug.d`                                           |
 | **Language** | JavaScript (LuCI AMD views loaded via `require`)                                  |
 | **Theme**    | Portable `style.css` (status pill + dark mode)                                    |
-| **Build**    | `bash` + `tar` (no SDK, `.ipk`)                                               |
+| **Build**    | `bash` + `tar` (ipk) + `apk-tools v3` (apk) — no SDK                       |
 | **Release**  | semantic-release + GitHub Actions                                                 |
 
 ---
@@ -54,7 +54,7 @@ BITS-Tailscale/
 ├── .github/
 │   ├── dependabot.yml             # dep update (npm + actions)
 │   └── workflows/
-│       └── release.yml            # semantic-release + build .ipk + attach asset
+│       └── release.yml            # semantic-release + build .ipk/.apk + attach asset
 ├── luci-app-bitstailscale/
 │   ├── Makefile                   # OpenWrt package def (luci.mk) — buat build manual
 │   ├── htdocs/
@@ -76,7 +76,7 @@ BITS-Tailscale/
 │               └── rpcd/acl.d/luci-app-bitstailscale.json
 ├── scripts/
 │   └── prepare.js                 # sync version + build .ipk (semantic-release)
-├── build.sh                       # SDK-less .ipk packer (bash + tar)
+├── build.sh                       # SDK-less .ipk + .apk packer (bash + tar + apk-tools)
 ├── control                        # ipk metadata
 ├── postinst                       # reload ACL/menu + tailscale update
 ├── conffiles                      # jangan timpa /etc/config/tailscale saat upgrade
@@ -97,12 +97,18 @@ BITS-Tailscale/
 
 ### 1. Download
 
-Grab the `.ipk` from the [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases) page, then copy it to your device. Untuk OpenWrt 25.12+ (apk), bangun manual lewat build system (lihat Build).
+Grab package dari [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases), lalu copy ke device:
+- `.ipk` untuk OpenWrt 22.03–24.10 (`opkg`)
+- `.apk` untuk OpenWrt 25.12+ (`apk`)
 
 ### 2. Install
 
 ```sh
+# OpenWrt 22.03–24.10 (opkg)
 opkg install luci-app-bitstailscale_<version>_all.ipk
+
+# OpenWrt 25.12+ (apk)
+apk add luci-app-bitstailscale_<version>_all.apk
 ```
 
 `tailscale` (binary) is installed automatically via the package dependency. To force the latest official binary:
@@ -119,16 +125,19 @@ Open LuCI (`Services → BITS Tailscale`) and sign in with your Tailscale accoun
 
 ## 🏗️ Build
 
-### Option A — SDK-less `.ipk` (cepat)
+### Option A — SDK-less `.ipk` + `.apk` (cepat)
+
+Butuh `apk-tools v3` (`apk mkpkg`) di `PATH`. Di CI sudah di-cache; lokal install `apk-tools` 3.x atau set `APK_BIN=<path/to/apk>`.
 
 ```sh
 ./build.sh
 # output: dist/luci-app-bitstailscale_<version>_all.ipk
+#         dist/luci-app-bitstailscale_<version>_all.apk
 ```
 
-> Format `.ipk` = outer `tar.gz` berisi `./debian-binary` + `./control.tar.gz` + `./data.tar.gz`.
+> `.ipk` = outer `tar.gz` (debian-binary + control.tar.gz + data.tar.gz). `.apk` = ADB container via `apk mkpkg`.
 
-### Option B — OpenWrt build system (bila butuh `.apk` 25.12)
+### Option B — OpenWrt build system (buildroot lengkap)
 
 Copy package folder ke `feeds/luci/applications/`, lalu:
 
@@ -151,7 +160,7 @@ Releases are automated with [semantic-release](https://semantic-release.gitbook.
 | `feat: ...`                      | minor      |
 | `BREAKING CHANGE:` in body       | major      |
 
-Push to `main` dan workflow build `.ipk` (build.sh) lalu publish ke GitHub Release.
+Push to `main` dan workflow build `.ipk` + `.apk` (build.sh + apk-tools) lalu publish ke GitHub Release.
 
 ---
 

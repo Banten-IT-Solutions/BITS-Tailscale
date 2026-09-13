@@ -34,6 +34,30 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: ♻️ Cache apk-tools
+        id: apktools-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apk-bin
+          key: apk-tools-3.0.5-b5a31c0
+
+      - name: 🔨 Build apk-tools
+        if: steps.apktools-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq meson ninja-build libzstd-dev libssl-dev liblua5.3-dev
+          git clone --depth 1 https://gitlab.alpinelinux.org/alpine/apk-tools.git /tmp/apk-tools
+          git -C /tmp/apk-tools fetch --depth 1 origin b5a31c0d865342ad80be10d68f1bb3d3ad9b0866
+          git -C /tmp/apk-tools checkout FETCH_HEAD
+          meson setup /tmp/apk-tools/build /tmp/apk-tools -Ddocs=disabled
+          ninja -C /tmp/apk-tools/build
+          mkdir -p apk-bin
+          cp /tmp/apk-tools/build/src/apk apk-bin/apk
+          cp /tmp/apk-tools/build/src/libapk.so.3.0.0 apk-bin/
+
+      - name: 🔗 Add apk to PATH
+        run: echo "$PWD/apk-bin" >> "$GITHUB_PATH"
+
       - name: 🔧 Configure Git
         run: |
           git config user.name "github-actions[bot]"
