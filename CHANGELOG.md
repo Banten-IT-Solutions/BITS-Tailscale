@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.9...v1.1.0) (2026-09-13)
+
+
+### Features
+
+* publish signed ipk/apk packages ([5a3f4fd](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/5a3f4fd14ab8bc8fca31fcc7f16a20eecae152e7))
+
 ## [1.0.9](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.0.8...v1.0.9) (2026-09-12)
 
 
