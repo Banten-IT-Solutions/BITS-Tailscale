@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.2...v1.2.3) (2026-09-13)
+
+
+### Bug Fixes
+
+* standard apk filename (name-version-r0.apk) for apk feed ([6c6b907](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/6c6b907a6dc811d43515abb898d1a0f15d9519a6))
+
 ## [1.2.2](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.1...v1.2.2) (2026-09-13)
 
 
