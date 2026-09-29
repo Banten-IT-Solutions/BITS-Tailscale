@@ -25,18 +25,18 @@ jobs:
       released: ${{ steps.semantic.outputs.released }}
       tag: ${{ steps.semantic.outputs.tag }}
     steps:
-      - name: 🧾 Checkout
+      - name: 📦 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Setup Node
+      - name: 🟢 Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
 
-      - name: ♻️ Cache apk-tools
+      - name: ♻️ Cache apk
         id: apktools-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -45,7 +45,7 @@ jobs:
           restore-keys: |
             apk-tools-3.0.5-${{ runner.os }}-
 
-      - name: 🔨 Build apk-tools
+      - name: 🔨 Build apk
         if: steps.apktools-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update -qq
@@ -61,24 +61,24 @@ jobs:
           cp /tmp/apk-tools/build/src/apk apk-bin/apk
           cp /tmp/apk-tools/build/src/libapk.so.3.0.0 apk-bin/
 
-      - name: 🔗 Add apk to PATH
+      - name: ➕ Add PATH
         run: echo "$PWD/apk-bin" >> "$GITHUB_PATH"
 
       # Smoke test: cache bisa berisi binary lama yang tidak kompatibel dengan
       # image runner terbaru. Gagal di sini lebih jelas daripada gagal di tengah
       # build paket.
-      - name: 🔎 Verify apk binary
+      - name: ✅ Verify apk
         run: apk --version
 
-      - name: 🔧 Configure Git
+      - name: 🔧 Git Config
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 📦 Install
+      - name: 📥 Install Deps
         run: npm ci
 
-      - name: 🚀 Semantic Release
+      - name: 🚀 Publish
         id: semantic
         run: |
           prev="$(git describe --tags --abbrev=0 2>/dev/null || true)"
@@ -95,13 +95,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   feed:
-    name: 🔔 Trigger Feed
+    name: 📡 Feed
     needs: release
     if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: 🔔 Trigger Feed
+      - name: 📡 Dispatch
         run: |
           gh api repos/Banten-IT-Solutions/BITS-WRT-Packages/dispatches \
             -f event_type=release-update \
