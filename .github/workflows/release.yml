@@ -10,13 +10,15 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release:
     name: 🚀 Release
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -24,29 +26,35 @@ jobs:
       tag: ${{ steps.semantic.outputs.tag }}
     steps:
       - name: 🧾 Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: ⚙️ Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
 
       - name: ♻️ Cache apk-tools
         id: apktools-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apk-bin
-          key: apk-tools-3.0.5-b5a31c0
+          key: apk-tools-3.0.5-b5a31c0-${{ runner.os }}
+          restore-keys: |
+            apk-tools-3.0.5-${{ runner.os }}-
 
       - name: 🔨 Build apk-tools
         if: steps.apktools-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq meson ninja-build libzstd-dev libssl-dev liblua5.3-dev
-          git clone --depth 1 --branch v3.0.5 https://github.com/alpinelinux/apk-tools.git /tmp/apk-tools
+          git init -q /tmp/apk-tools
+          git -C /tmp/apk-tools remote add origin https://github.com/alpinelinux/apk-tools.git
+          # Fetch tepat pada commit tag v3.0.5 (immutable), bukan tag yang bisa dipindah.
+          git -C /tmp/apk-tools fetch -q --depth 1 origin b5a31c0d865342ad80be10d68f1bb3d3ad9b0866
+          git -C /tmp/apk-tools checkout -q FETCH_HEAD # v3.0.5 @ b5a31c0
           meson setup /tmp/apk-tools/build /tmp/apk-tools -Ddocs=disabled
           ninja -C /tmp/apk-tools/build
           mkdir -p apk-bin
@@ -55,6 +63,12 @@ jobs:
 
       - name: 🔗 Add apk to PATH
         run: echo "$PWD/apk-bin" >> "$GITHUB_PATH"
+
+      # Smoke test: cache bisa berisi binary lama yang tidak kompatibel dengan
+      # image runner terbaru. Gagal di sini lebih jelas daripada gagal di tengah
+      # build paket.
+      - name: 🔎 Verify apk binary
+        run: apk --version
 
       - name: 🔧 Configure Git
         run: |
@@ -92,6 +106,7 @@ jobs:
           gh api repos/Banten-IT-Solutions/BITS-WRT-Packages/dispatches \
             -f event_type=release-update \
             -f client_payload[repo]=BITS-Tailscale \
-            -f client_payload[version]="${{ needs.release.outputs.tag }}"
+            -f client_payload[version]="$VERSION"
         env:
+          VERSION: ${{ needs.release.outputs.tag }}
           GH_TOKEN: ${{ secrets.FEED_PAT }}

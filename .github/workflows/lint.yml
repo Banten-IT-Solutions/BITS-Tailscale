@@ -1,0 +1,46 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # ubuntu-latest sudah membawa shellcheck; apt dipakai hanya sebagai cadangan.
+      - name: Install ShellCheck
+        run: command -v shellcheck >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y shellcheck)
+      # Existing OpenWrt scripts may emit warnings; tighten enforcement after cleanup.
+      - name: Check bash script
+        run: shellcheck -s bash build.sh
+      - name: Check OpenWrt shell scripts
+        run: >-
+          shellcheck -s sh --severity=error
+          luci-app-bitstailscale/root/etc/init.d/tailscale
+          luci-app-bitstailscale/root/usr/sbin/tailscale_helper
+          luci-app-bitstailscale/root/etc/hotplug.d/iface/40-tailscale
+          luci-app-bitstailscale/root/etc/uci-defaults/40_luci-tailscale
+          postinst
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run actionlint
+        # Image Docker tidak bisa di-pin ke commit SHA; pakai tag versi eksplisit
+        # alih-alih :latest agar hasil lint reproducible.
+        uses: docker://rhysd/actionlint:1.7.12
