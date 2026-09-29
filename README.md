@@ -30,19 +30,19 @@
 | **Logs Viewer**           | Tailscale daemon logs with *Scroll to tail / head* buttons and symmetric margins.                               |
 | **Page Title Fix**        | Each page title is rendered via `form.Map(config, title)` so it no longer disappears.                          |
 | **ACL Logread Fix**       | ACL allows `logread` on both OpenWrt 22.03 (`/sbin/logread`) and 24.10 (`/usr/libexec/logread-ubox`) &mdash; prevents `PermissionError: Access to command denied by ACL`. |
-| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` / `apk` pulls the official binary automatically.                       |
-| **Official Latest**       | `postinst` best-effort upgrades the binary via `tailscale update` (non-fatal).                                  |
-| **Automated Release**     | semantic-release builds `.ipk` + `.apk` and publishes a GitHub Release on every conventional commit.            |
+| **Binary Auto-install**   | Package `Depends: tailscale`, so `opkg` / `apk` installs the dependency when available from a feed.              |
+| **Best-effort Update**    | `postinst` attempts `tailscale update` in the background; failure is non-fatal.                                  |
+| **Automated Release**     | semantic-release builds `.ipk` + `.apk` and publishes a GitHub Release when commits qualify for release.         |
 
 ## 🛠️ Tech Stack
 
 | Layer        | Technology                                                                        |
 | ------------ | --------------------------------------------------------------------------------- |
 | **Runtime**  | OpenWrt (LuCI)                                                                    |
-| **Backend**  | `rpcd` ACL, `uci-defaults`, `hotplug.d`                                           |
+| **Backend**  | `init.d` service (procd), `tailscale_helper`, `rpcd` ACL, `uci-defaults`, `hotplug.d` |
 | **Language** | JavaScript (LuCI AMD views loaded via `require`)                                  |
 | **Theme**    | Portable `style.css` (status pill + dark mode)                                    |
-| **Build**    | `bash` + `tar` (ipk) + `apk-tools v3` (apk) — no SDK                       |
+| **Build**    | `bash` + `tar` (ipk) + `apk-tools v3` (apk) — no SDK                              |
 | **Release**  | semantic-release + GitHub Actions                                                 |
 
 ---
@@ -52,9 +52,10 @@
 ```text
 BITS-Tailscale/
 ├── .github/
-│   ├── dependabot.yml             # dep update (npm + actions)
+│   ├── dependabot.yml             # dependency updates (npm + actions)
 │   └── workflows/
-│       └── release.yml            # semantic-release + build .ipk/.apk + attach asset
+│       ├── lint.yml               # shellcheck + actionlint
+│       └── release.yml            # semantic-release + build .ipk/.apk + attach assets
 ├── luci-app-bitstailscale/
 │   ├── htdocs/
 │   │   └── luci-static/resources/view/bitstailscale/
@@ -75,10 +76,10 @@ BITS-Tailscale/
 │               └── rpcd/acl.d/luci-app-bitstailscale.json
 ├── scripts/
 │   └── prepare.js                 # sync version + build .ipk/.apk (semantic-release)
-├── build.sh                       # SDK-less .ipk + .apk packer (bash + tar + apk-tools)
+├── build.sh                       # SDK-less .ipk + .apk packer
 ├── control                        # ipk metadata
-├── postinst                       # reload ACL/menu + tailscale update
-├── conffiles                      # jangan timpa /etc/config/tailscale saat upgrade
+├── postinst                       # reload ACL/menu + best-effort tailscale update
+├── conffiles                      # preserve /etc/config/tailscale on upgrade
 ├── package.json                   # semantic-release + plugins
 ├── package-lock.json              # npm lockfile (npm ci)
 ├── .releaserc.json                # release plugins (git + github)
@@ -91,30 +92,27 @@ BITS-Tailscale/
 
 ### Prerequisites
 
-- An OpenWrt device (22.03+), with the `luci` feed installed
-- Internet access for the `tailscale` binary
+- OpenWrt device with the `luci` feed installed. Target support: OpenWrt 22.03+ for `.ipk`; OpenWrt 25.12+ for `.apk`. The repository has no compatibility test matrix; compatibility reports and contributions are welcome.
+- Internet access and an available `tailscale` package from a feed. Package dependencies: `libc`, `luci-base`, `rpcd`, `tailscale`.
 
 ### 1. Download
 
-Grab package dari [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases), lalu copy ke device:
-- `.ipk` untuk OpenWrt 22.03–24.10 (`opkg`)
-- `.apk` untuk OpenWrt 25.12+ (`apk`)
+Download package from [Releases](https://github.com/Banten-IT-Solutions/BITS-Tailscale/releases), then copy it to your device:
+
+- `.ipk` for `opkg`: `luci-app-bitstailscale_<version>_all.ipk`
+- `.apk` for `apk-tools v3`: `luci-app-bitstailscale-<version>-r0.apk`
 
 ### 2. Install
 
 ```sh
-# OpenWrt 22.03–24.10 (opkg)
-opkg install luci-app-bitstailscale_<version>_all.ipk
+# Install the .ipk package
+opkg install ./luci-app-bitstailscale_<version>_all.ipk
 
-# OpenWrt 25.12+ (apk)
-apk add luci-app-bitstailscale_<version>_all.apk
+# Install the apk-tools v3 package
+apk add ./luci-app-bitstailscale-<version>-r0.apk
 ```
 
-`tailscale` (binary) is installed automatically via the package dependency. To force the latest official binary:
-
-```sh
-tailscale update
-```
+After installation, `postinst` restarts `rpcd`, clears LuCI index/module caches, and runs `tailscale update` in the background on a best-effort, non-fatal basis. The package depends on a `tailscale` binary available from a feed; the update attempt does not guarantee the latest official version.
 
 ### 3. Use
 
@@ -122,37 +120,92 @@ Open LuCI (`Services → BITS Tailscale`) and sign in with your Tailscale accoun
 
 ---
 
+## ⚙️ UCI Configuration
+
+Configuration file: `/etc/config/tailscale`.
+
+| Option | Default | Function |
+|---|---|---|
+| `enabled` | `0` | Enables the service. Must be `1`; otherwise the service does not run. |
+| `port` | `41641` | UDP port for `tailscaled`. |
+| `config_path` | `/etc/tailscale` | `tailscaled` working/state directory, containing `tailscaled.state`. |
+| `fw_mode` | `nftables` | Firewall mode (`nftables` or `iptables`), passed through `TS_DEBUG_FIREWALL_MODE`. |
+| `log_stdout` / `log_stderr` | `1` / `1` | Enable procd stdout/stderr logging. |
+| `accept_routes` | off | Accept subnet routes advertised by other nodes. |
+| `hostname` | (empty) | Device name; empty uses the device hostname. |
+| `accept_dns` | on | Accept DNS settings from the Tailscale console; also enables MagicDNS/dnsmasq configuration. |
+| `advertise_exit_node` | off | Advertise this device as an exit node. |
+| `exit_node` | (empty) | Use a specific exit node. |
+| `advertise_routes` | (empty) | Advertise local subnets, for example `10.0.0.0/24`. |
+| `disable_snat_subnet_routes` | off | Disable SNAT for site-to-site Layer 3 routing. |
+| `subnet_routes` | (empty) | Select subnet routes advertised by other nodes. |
+| `access` | `ts_ac_lan ts_ac_wan lan_ac_ts` | Firewall forwarding rules between Tailscale and LAN/WAN. Options: `ts_ac_lan`, `ts_ac_wan`, `lan_ac_ts`, `wan_ac_ts`. |
+| `flags` | (empty) | Additional arguments for `tailscale up`. Each token must use `--option[=value]`; other tokens are ignored and logged. Glob expansion is disabled. `--authkey`, `--auth-key`, `--state`, and `--socket` are rejected. |
+| `login_server` | (empty) | Custom control server. |
+| `authkey` | (empty) | Optional authentication key. |
+
+> Only `enabled`, `port`, `config_path`, `fw_mode`, `log_stdout`, and `log_stderr` ship in `/etc/config/tailscale`. The remaining options are written when you save the LuCI form, so the defaults above are the **form** defaults. Enabling the service with plain `uci` leaves them unset; in that case `ACCEPT_DNS` never equals `1`, so `tailscale_helper` skips the MagicDNS/dnsmasq wiring.
+
+---
+
+## 🔐 LuCI ACL / Permissions
+
+The `rpcd/acl.d` ACL grants:
+
+- Read and write access to UCI `tailscale`.
+- Command execution: `/sbin/ip -s -j ad`, `/sbin/logread -e tailscale`, `/usr/libexec/logread-ubox -e tailscale`, `/usr/sbin/tailscale status --json`, `/usr/sbin/tailscale login`, and `/usr/sbin/tailscale logout`.
+- Ubus access to `service.list`.
+
+Any LuCI user granted this ACL can write Tailscale configuration, including `authkey` and `flags`.
+
+---
+
 ## 🏗️ Build
 
-SDK-less `.ipk` + `.apk`. Butuh `apk-tools v3` (`apk mkpkg`) di `PATH`. Di CI sudah di-cache; lokal install `apk-tools` 3.x atau set `APK_BIN=<path/to/apk>`.
+`build.sh` creates `.ipk` and `.apk` packages without the OpenWrt SDK. It requires Bash, `tar` (with `gzip`), `awk`, and `tr`. To build `.apk`, use apk-tools v3 with the `mkpkg` applet; set `APK_BIN` if the binary is not in `PATH`. Node.js 24 and npm are not required by `build.sh`; they are used only by CI release automation (`semantic-release`).
+
+In CI, an `.apk` artifact is required: with `CI=true`, the build fails if the `apk` binary is unavailable. Locally, the `.apk` build may be skipped with a warning.
 
 ```sh
 ./build.sh
 # output: dist/luci-app-bitstailscale_<version>_all.ipk
-#         dist/luci-app-bitstailscale_<version>_all.apk
+#         dist/luci-app-bitstailscale-<version>-r0.apk
 ```
 
-> `.ipk` = outer `tar.gz` (debian-binary + control.tar.gz + data.tar.gz). `.apk` = ADB container via `apk mkpkg`.
+> `.ipk` is an outer `tar.gz` archive containing `debian-binary`, `control.tar.gz`, and `data.tar.gz`. `.apk` is an apk-tools v3 package created with `apk mkpkg`. The `.apk` build uses `replaces:tailscale`; the `.ipk` uses the bundled `control` metadata, which has no `Replaces` or `Conflicts` field.
 
 ---
 
 ## 🚀 Release
 
-Releases are automated with [semantic-release](https://semantic-release.gitbook.io) and [Conventional Commits](https://www.conventionalcommits.org). Write a conventional commit:
+Releases use [semantic-release](https://semantic-release.gitbook.io) and [Conventional Commits](https://www.conventionalcommits.org):
 
-| Commit                           | Bump       |
-| -------------------------------- | ---------- |
-| `fix: ...`                       | patch      |
-| `feat: ...`                      | minor      |
-| `BREAKING CHANGE:` in body       | major      |
+| Commit | Bump |
+|---|---|
+| `fix: ...` | patch |
+| `feat: ...` | minor |
+| `BREAKING CHANGE:` footer or `feat!:` / `fix(scope)!:` | major |
 
-Push to `main` dan workflow build `.ipk` + `.apk` (build.sh + apk-tools) lalu publish ke GitHub Release.
+Pushes to `main` create a release only when commits qualify for a release; a push without release-worthy commits does not create one. The workflow builds `.ipk` and `.apk`, then publishes assets to GitHub Releases.
+
+---
+
+## 🩹 Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| Menu opens but nothing happens | Service is disabled: `enabled` defaults to `0`. Set `uci set tailscale.settings.enabled=1 && uci commit tailscale`, then start the service. |
+| Status stays *Disconnected* | `tailscale status` and `/etc/init.d/tailscale status`. If `tailscaled` is not running, inspect procd logs. |
+| No logs | `logread -e tailscale` (or `/usr/libexec/logread-ubox -e tailscale` on newer builds). Helper errors are logged as `tailscale_helper`. |
+| Login link missing | `tailscale status --json` must expose `AuthURL`. The view only renders an `https://` login link; otherwise it shows plain text. |
+| Hotplug/start issues | `/tmp/tailscale.log` (rewritten on each qualifying interface event). |
+| After install the menu is missing | `postinst` restarts `rpcd` and clears the LuCI index cache. If the menu is still missing, log out and back in so the ACL is re-evaluated. |
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE`.
+Distributed under the MIT License. See [`LICENSE`](LICENSE).
 
 ---
 
