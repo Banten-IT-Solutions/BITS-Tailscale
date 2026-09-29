@@ -1,3 +1,11 @@
+## [1.2.5](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.4...v1.2.5) (2026-09-29)
+
+
+### Bug Fixes
+
+* cegah kehilangan data saat install dan stop service ([b98b68b](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/b98b68be4846495387c549b6183324c160f4c179))
+* perbaiki perilaku lock, firewall, polling UI, dan guard build ([e72b30c](https://github.com/Banten-IT-Solutions/BITS-Tailscale/commit/e72b30c68ee848314c39e308eddb57a39d00ab16))
+
 ## [1.2.4](https://github.com/Banten-IT-Solutions/BITS-Tailscale/compare/v1.2.3...v1.2.4) (2026-09-13)
 
 
