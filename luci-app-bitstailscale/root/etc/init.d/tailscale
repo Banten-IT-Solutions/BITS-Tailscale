@@ -1,5 +1,12 @@
 #!/bin/sh /etc/rc.common
 
+# Variabel di bawah dibaca oleh /etc/rc.common (framework init OpenWrt), bukan
+# oleh script ini. `config_get_bool` mengisi variabel lewat eval sehingga
+# utilitas lint tidak melihat aksinya, dan `local` didukung busybox ash (shell
+# default OpenWrt) meski tidak tercantum dalam POSIX.
+#
+# shellcheck disable=SC2034,SC2154,SC3043
+
 START=90
 
 USE_PROCD=1
@@ -83,7 +90,8 @@ tailscale_helper() {
 		SUBNET_ROUTES="$subnet_routes" \
 		ACCESS="$access"
 
-  procd_set_param once # PATCHED helper oneshot, no respawn
+	# Helper dijalankan oneshot (sekali jalan), tanpa respawn.
+	procd_set_param once
 	procd_set_param stdout "$std_out"
 	procd_set_param stderr "$std_err"
 	procd_close_instance

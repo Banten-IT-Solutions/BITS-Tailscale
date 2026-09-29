@@ -61,30 +61,9 @@ if [ "$ACCEPT_DNS" = "1" ]; then
 	fi
 fi
 
-# Configure network interface for Tailscale
-ts0=$(ifconfig | grep 'tailscale' | awk '{print $1}')
-if false; then # PATCHED: netifd breaks TUN, skip
-	uci set network.tailscale='interface'
-	if [ "$ts0" = *$'\n'* ]; then
-		[ -n "$(uci batch <<-EOF 2>&1
-			set network.ts_lan='device'
-			set network.ts_lan.type='bridge'
-			set network.ts_lan.name='ts-lan'
-			set network.tailscale.proto='none'
-			set network.tailscale.device='ts-lan'
-		EOF
-		)" ] && revert_exit "Failed to configure network interface for Tailscale."
-		for port in "${ts0}"; do
-			uci add_list network.ts_lan.ports=$port || revert_exit "Failed to add port $port."
-		done
-	else
-		[ -n "$(uci batch <<-EOF 2>&1
-			set network.tailscale.proto='none'
-			set network.tailscale.device=$ts0
-		EOF
-		)" ] && revert_exit "Failed to configure network interface for Tailscale."
-	fi
-fi
+# Catatan: interface netifd untuk Tailscale sengaja TIDAK dibuat lagi.
+# Mengikat interface TUN Tailscale ke netifd terbukti merusak TUN, jadi blok
+# konfigurasi network.ts_lan/network.tailscale dihapus dari kode ini.
 
 # Configure exit node firewall rules
 if [ -n "$EXIT_NODE" ]; then
@@ -120,7 +99,7 @@ if [ -n "$SUBNET_ROUTES" ]; then
 			set network.ts_subnet$i.gateway=$ts_ip
 		EOF
 		)" ] && revert_exit "Failed to configure subnet routes for site to site."
-		let i++
+		i=$((i + 1))
 	done
 fi
 
@@ -139,41 +118,30 @@ if [ -n "$ACCESS" ]; then
 	)" ] && revert_exit "Failed to create firewall zone and forwarding rules for Tailscale."
 fi
 
-# Configure specific firewall forwarding rules between Tailscale, LAN, and WAN
-if [ "${ACCESS//ts_ac_lan/}" != "$ACCESS" ]; then
+# Configure specific firewall forwarding rules between Tailscale, LAN, and WAN.
+# Format: <nama section>:<src>:<dest>. Hanya opsi yang dipilih di UCI (ACCESS)
+# yang dibuat, dengan pencocokan per-kata (bukan substring).
+for rule in ts_ac_lan:tailscale:lan ts_ac_wan:tailscale:wan lan_ac_ts:lan:tailscale wan_ac_ts:wan:tailscale; do
+	rule_name=${rule%%:*}
+	rule_rest=${rule#*:}
+	rule_src=${rule_rest%%:*}
+	rule_dest=${rule_rest#*:}
+	case " $ACCESS " in
+		*" $rule_name "*) ;;
+		*) continue ;;
+	esac
 	[ -n "$(uci batch <<-EOF 2>&1
-		set firewall.ts_ac_lan=forwarding
-		set firewall.ts_ac_lan.dest='lan'
-		set firewall.ts_ac_lan.src='tailscale'
+		set firewall.$rule_name=forwarding
+		set firewall.$rule_name.src='$rule_src'
+		set firewall.$rule_name.dest='$rule_dest'
 	EOF
-	)" ] && revert_exit "Failed to configure ts_ac_lan firewall forwarding rules."
-fi
-if [ "${ACCESS//ts_ac_wan/}" != "$ACCESS" ]; then
-	[ -n "$(uci batch <<-EOF 2>&1
-		set firewall.ts_ac_wan=forwarding
-		set firewall.ts_ac_wan.dest='wan'
-		set firewall.ts_ac_wan.src='tailscale'
-	EOF
-	)" ] && revert_exit "Failed to configure ts_ac_wan firewall forwarding rules."
-fi
-if [ "${ACCESS//lan_ac_ts/}" != "$ACCESS" ]; then
-	[ -n "$(uci batch <<-EOF 2>&1
-		set firewall.lan_ac_ts=forwarding
-		set firewall.lan_ac_ts.dest='tailscale'
-		set firewall.lan_ac_ts.src='lan'
-	EOF
-	)" ] && revert_exit "Failed to configure lan_ac_ts firewall forwarding rules."
-fi
-if [ "${ACCESS//wan_ac_ts/}" != "$ACCESS" ]; then
-	[ -n "$(uci batch <<-EOF 2>&1
-		set firewall.wan_ac_ts=forwarding
-		set firewall.wan_ac_ts.dest='tailscale'
-		set firewall.wan_ac_ts.src='wan'
-	EOF
-	)" ] && revert_exit "Failed to configure wan_ac_ts firewall forwarding rules."
-fi
+	)" ] && revert_exit "Failed to create firewall forwarding rule $rule_name."
+done
 
-# PATCHED MIGRATE: hapus netifd interface lama yg merusak TUN
+# Migrasi dari versi lama: buang sisa konfigurasi netifd (interface TUN rusak
+# bila diikat ke netifd) dan pastikan zone firewall memakai device tailscale0.
+# Section ts_lan/network.tailscale tidak lagi dibuat oleh kode sekarang, jadi
+# pada instalasi baru perintah delete di bawah adalah no-op.
 uci -q delete network.tailscale
 uci -q delete network.ts_lan
 uci -q delete firewall.tszone.network
