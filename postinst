@@ -4,7 +4,10 @@
 
 [ -z "$IPKG_INSTROOT" ] && {
 	/etc/init.d/rpcd restart >/dev/null 2>&1
-	rm -rf /tmp/luci-indexcache /tmp/luci-* /tmp/.uci
+	# Hapus hanya cache index/module LuCI. JANGAN sentuh /tmp/.uci:
+	# itu delta UCI seluruh sistem -> menghapusnya membuang perubahan
+	# `uci set` yang belum di-commit milik paket lain.
+	rm -rf /tmp/luci-indexcache /tmp/luci-modulecache
 
 	# Tailscale "official latest": paket ini Depends ke `tailscale` (binary dari feed
 	# atau yang sudah terpasang). Usahakan naik ke rilisan resmi terbaru secara

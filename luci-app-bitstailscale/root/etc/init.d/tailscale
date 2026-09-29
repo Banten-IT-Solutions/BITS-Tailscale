@@ -111,11 +111,15 @@ start_service() {
 stop_instance() {
 	local cfg="$1"
 
-	# Remove dnsmasq settings
-	MagicDNSSuffix=$(tailscale status --json | awk -F'"' '/"MagicDNSSuffix"/ {last=$(NF-1)} END {print last}')
-	for suffix in $(uci show dhcp | grep -E "address=.*/${MagicDNSSuffix}/" | sed "s/'//g"); do
-		uci -q del_list $suffix
-	done
+	# Remove dnsmasq settings.
+	# Guard: bila `tailscale status` gagal (daemon sudah mati), suffix kosong dan
+	# pola `address=.*/` akan meng-match SEMUA entry address user di dnsmasq.
+	MagicDNSSuffix=$(tailscale status --json 2>/dev/null | awk -F'"' '/"MagicDNSSuffix"/ {last=$(NF-1)} END {print last}')
+	if [ -n "$MagicDNSSuffix" ]; then
+		for suffix in $(uci show dhcp | grep -E "address=.*/${MagicDNSSuffix}/" | sed "s/'//g"); do
+			uci -q del_list "$suffix"
+		done
+	fi
  
 	# Remove network settings
 	uci -q delete network.tailscale
@@ -139,9 +143,12 @@ stop_instance() {
 	[ -n "$(uci changes firewall)" ] && uci commit firewall && /etc/init.d/firewall reload
 
 	/usr/sbin/tailscaled --cleanup
-
-	# Remove existing link or folder
-	rm -rf "$CONFIG_PATH"
+	# JANGAN hapus $CONFIG_PATH di sini:
+	# - path konstan ini (/var/lib/tailscale) bukan lokasi state sebenarnya
+	#   (state ada di $config_path/tailscaled.state, default /etc/tailscale)
+	# - reload_service -> stop -> start, jadi rm -rf ini ikut jalan tiap reload
+	#   dan akan meng-wipe state bila user menyetel config_path=/var/lib/tailscale
+	#   -> perangkat kehilangan login.
 }
 
 stop_service() {
