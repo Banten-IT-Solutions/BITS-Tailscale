@@ -4,6 +4,11 @@
 # .apk = apk-tools v3 `mkpkg` (butuh binary `apk` di PATH / env APK_BIN)
 set -euo pipefail
 
+# Selalu jalankan dari direktori repo: script ini memakai path relatif dan
+# melakukan `rm -rf .build dist`, sehingga salah direktori bisa menghapus
+# folder `dist` milik proyek lain.
+cd "$(dirname "$(readlink -f "$0")")"
+
 PKG_NAME=luci-app-bitstailscale
 PKG_VER=$(awk -F': ' '/^Version:/{print $2; exit}' control)
 PKG_DESC=$(awk -F': ' '/^Description:/{print $2; exit}' control)
@@ -12,8 +17,18 @@ PKG_DEPENDS=$(awk -F': ' '/^Depends:/{print $2; exit}' control | tr ',' ' ')
 OUT_IPK="dist/${PKG_NAME}_${PKG_VER}_all.ipk"
 OUT_APK="dist/${PKG_NAME}-${PKG_VER}-r0.apk"
 
+# Di CI (env CI=true) artefak .apk WAJIB jadi supaya rilis tidak terbit tanpa
+# asset. Lokal tetap boleh skip bila binary apk tidak tersedia.
+REQUIRE_APK="${REQUIRE_APK:-}"
+if [ -z "$REQUIRE_APK" ]; then
+	case "${CI:-}" in
+		true | 1 | yes) REQUIRE_APK=1 ;;
+		*) REQUIRE_APK=0 ;;
+	esac
+fi
+
 rm -rf .build dist
-mkdir -p .build/root .build/control .build/outer dist
+mkdir -p .build/root/www .build/control .build/outer dist
 
 # htdocs -> /www ; root -> /
 cp -a luci-app-bitstailscale/htdocs/. .build/root/www/
@@ -57,8 +72,15 @@ if command -v "$APK_BIN" >/dev/null 2>&1; then
   "$APK_BIN" "${APK_ARGS[@]}"
   echo "Built: $OUT_APK"
 else
-  echo "skip .apk: binary 'apk' not found (set APK_BIN)"
+  if [ "$REQUIRE_APK" = "1" ]; then
+    echo "error: binary 'apk' not found (set APK_BIN) but .apk is required here" >&2
+    exit 1
+  fi
+  echo "skip .apk: binary 'apk' not found (set APK_BIN)" >&2
 fi
 
 rm -rf .build
 echo "Built: $OUT_IPK"
+if [ -f "$OUT_APK" ]; then
+  echo "Built: $OUT_APK"
+fi

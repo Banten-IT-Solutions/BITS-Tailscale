@@ -11,14 +11,24 @@ revert_exit() {
 	exit 1
 }
 
-# Execute tailscale up command
-/usr/sbin/tailscale up --reset "$@" || revert_exit "tailscale up failed."
-
-# Use flock to acquire an exclusive lock
+# Use flock to acquire an exclusive lock.
+# Kegagalan lock berarti ada instance lain yang sedang berjalan: keluar
+# diam-diam. JANGAN revert konfigurasi / stop service -- itu justru merusak
+# konfigurasi milik instance lain yang sedang sehat.
 LOCK_FILE="/var/lock/tailscale.lock"
 exec 9> "$LOCK_FILE"
-flock -xn 9 || { revert_exit "Failed to acquire lock on $LOCK_FILE"; }
-trap 'rm -f "$LOCK_FILE"; exit' INT TERM EXIT
+if ! flock -xn 9; then
+	logger -p daemon.info -t tailscale_helper "another instance holds $LOCK_FILE, exiting"
+	exit 0
+fi
+# Tidak ada trap penghapus: cukup keluar, fd 9 ditutup otomatis dan lock
+# dilepas. Meng-unlink file lock saat fd masih terbuka membuat proses
+# berikutnya mengunci inode baru sehingga lock lama tidak berlaku lagi, dan
+# trap EXIT juga menimpa exit status sebenarnya.
+
+# Execute tailscale up command (setelah lock, supaya instance kedua tidak
+# sempat menjalankan `up` ganda)
+/usr/sbin/tailscale up --reset "$@" || revert_exit "tailscale up failed."
 
 # Wait for Tailscale IPv4 address
 count=0
@@ -30,14 +40,25 @@ done
 
 # Configure Tailscale MagicDNS
 if [ "$ACCEPT_DNS" = "1" ]; then
-	MagicDNSSuffix=$(tailscale status --json | awk -F'"' '/"MagicDNSSuffix"/ {last=$(NF-1)} END {print last}')
-	target_address="/$MagicDNSSuffix/100.100.100.100"
-	index=$(uci show dhcp | grep 'dhcp.@dnsmasq\[[0-9]\+\]=dnsmasq' | grep -o '[0-9]\+')
-	for i in $index; do
-		if ! uci get dhcp.@dnsmasq[$i].address 2>/dev/null | grep -qxF "$target_address"; then
-			uci add_list "dhcp.@dnsmasq[$i].address=$target_address" || revert_exit "Failed to add DNS address."
-		fi
-	done
+	MagicDNSSuffix=$(tailscale status --json 2>/dev/null | awk -F'"' '/"MagicDNSSuffix"/ {last=$(NF-1)} END {print last}')
+	# Guard: suffix kosong (status gagal / belum siap) akan membentuk target
+	# `//100.100.100.100` yang tidak valid, dan suffix mengandung `/` atau
+	# spasi akan merusak format entry dnsmasq. Lewati, jangan ubah UCI.
+	case "$MagicDNSSuffix" in
+		'' | */* | *' '*)
+			logger -p daemon.warn -t tailscale_helper "MagicDNSSuffix unavailable, skipping dnsmasq config"
+			MagicDNSSuffix=""
+			;;
+	esac
+	if [ -n "$MagicDNSSuffix" ]; then
+		target_address="/$MagicDNSSuffix/100.100.100.100"
+		index=$(uci show dhcp | grep 'dhcp.@dnsmasq\[[0-9]\+\]=dnsmasq' | grep -o '[0-9]\+')
+		for i in $index; do
+			if ! uci -q get "dhcp.@dnsmasq[$i].address" 2>/dev/null | grep -qxF "$target_address"; then
+				uci add_list "dhcp.@dnsmasq[$i].address=$target_address" || revert_exit "Failed to add DNS address."
+			fi
+		done
+	fi
 fi
 
 # Configure network interface for Tailscale
@@ -68,9 +89,23 @@ fi
 # Configure exit node firewall rules
 if [ -n "$EXIT_NODE" ]; then
 	uci set firewall.@defaults[0].forward='REJECT' || revert_exit "Failed to set default forward policy to REJECT."
-	# Find the LAN to WAN forwarding rule index
+	# Find LAN->WAN forwarding rule indices. Hasil grep bisa memuat angka dari
+	# baris konteks, jadi saring hanya indeks yang benar-benar numerik, dan
+	# nonaktifkan SEMUA aturan lan->wan yang cocok (bisa lebih dari satu).
 	index=$(uci show firewall | grep "firewall.@forwarding\[[0-9]\+\]\.src='lan'" -B 1 -A 1 | grep "firewall.@forwarding\[[0-9]\+\]\.dest='wan'" | grep -o '[0-9]\+')
-	[ -n "$index" ] && uci set firewall.@forwarding[$index].enabled='0' || revert_exit "Failed to disable forwarding rule."
+	valid_index=""
+	for idx in $index; do
+		case "$idx" in
+			'' | *[!0-9]*) ;;
+			*) valid_index="$valid_index $idx" ;;
+		esac
+	done
+	if [ -z "${valid_index# }" ]; then
+		revert_exit "Failed to disable forwarding rule (no LAN->WAN rule found)."
+	fi
+	for idx in $valid_index; do
+		uci set "firewall.@forwarding[$idx].enabled=0" || revert_exit "Failed to disable forwarding rule."
+	done
 fi
 
 # Configure subnet routes for site to site

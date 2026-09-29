@@ -50,7 +50,30 @@ tailscale_helper() {
 	}
 	[ -n "$advertise_routes" ] && procd_append_param command --advertise-routes="$(echo $advertise_routes | tr ' ' ',')"
 	[ "$disable_snat_subnet_routes" = "1" ] && procd_append_param command --snat-subnet-routes=false
-	[ -n "$flags" ] && procd_append_param command $flags
+	# Flag tambahan dari UCI. Split pada whitespace tetap diperlukan (satu opsi
+	# = satu argumen), tapi NONAKTIFKAN glob expansion (`set -f`) supaya token
+	# berisi karakter liar tidak melebar jadi argumen tambahan, dan hanya
+	# terima token berformat `--opsi[=nilai]`.
+	if [ -n "$flags" ]; then
+		set -f
+		for f in $flags; do
+			case "$f" in
+				--*) ;;
+				*)
+					logger -p daemon.warn -t tailscale "ignoring invalid flag: $f"
+					continue
+					;;
+			esac
+			case "$f" in
+				--authkey* | --auth-key* | --state* | --socket*)
+					logger -p daemon.warn -t tailscale "ignoring restricted flag: $f"
+					continue
+					;;
+			esac
+			procd_append_param command "$f"
+		done
+		set +f
+	fi
 	[ -n "$login_server" ] && procd_append_param command --login-server="$login_server"
 	[ -n "$authkey" ] && procd_append_param command --authkey="$authkey"
 
@@ -130,7 +153,16 @@ stop_instance() {
 	
 	# Remove firewall settings
 	index=$(uci show firewall | grep "firewall.@forwarding\[[0-9]\+\]\.src='lan'" -B 1 -A 1 | grep "firewall.@forwarding\[[0-9]\+\]\.dest='wan'" | grep -o '[0-9]\+')
-	uci -q delete firewall.@forwarding[$index].enabled
+	for idx in $index; do
+		# Hanya angka indeks yang sah; hasil grep bisa berisi potongan angka lain.
+		case "$idx" in
+			'' | *[!0-9]*) ;;
+			*) uci -q delete "firewall.@forwarding[$idx].enabled" ;;
+		esac
+	done
+	# Kembalikan global forward policy yang di-set tailscale_helper saat exit
+	# node aktif (REJECT). Default OpenWrt adalah ACCEPT (opsi tidak ada).
+	[ "$(uci -q get firewall.@defaults[0].forward)" = "REJECT" ] && uci -q delete firewall.@defaults[0].forward
 	uci -q delete firewall.tszone
 	uci -q delete firewall.ts_ac_lan
 	uci -q delete firewall.ts_ac_wan
